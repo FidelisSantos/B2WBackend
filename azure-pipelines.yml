@@ -1,0 +1,50 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+- task: Npm@1
+  inputs:
+    command: 'install'
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: 'echo ''Finish Install'''
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: 'npx tsc'
+
+- task: Bash@3
+  inputs:
+    targetType: 'inline'
+    script: 'echo ''Finish build'''
+   
+- task: CopyFiles@2
+  inputs:
+    SourceFolder: 'dist'
+    Contents: '**'
+    TargetFolder: 'app'
+
+- task: PublishPipelineArtifact@1
+  inputs:
+    targetPath: '$(Pipeline.Workspace)'
+    artifact: 'app'
+    publishLocation: 'pipeline'
+
+- task: AzureRmWebAppDeployment@4
+  inputs:
+    ConnectionType: 'AzureRM'
+    azureSubscription: 'MyAssinatura(6e4caa54-91e5-4ab9-93f9-1c97ebca0544)'
+    appType: 'webAppLinux'
+    WebAppName: 'backendfacout'
+    packageForLinux: '$(System.DefaultWorkingDirectory)/**/*.zip'
+    RuntimeStack: 'NODE|16-lts'
