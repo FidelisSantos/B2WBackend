@@ -18,20 +18,17 @@ class AuthService implements IAuthService {
       return res.status(401).send({ message: 'Login ou senha incorretos'})
      const user = await this.authReposuory.findByEmail(email);
 
-     if(!user)
-      return res.status(401).send({ message: 'Login ou senha incorretos'})
-
-    if(user.password != password)
-      return res.status(401).send({ message: 'Login ou senha incorretos'})
+     if(!user || user.password != password)
+      throw new BadRequestError("Login ou senha incorretos")
 
     if(!user.isValid)
-      return res.status(403).send({message:'Usuário não foi validado pelos administradores'});
+      throw new BadRequestError('Usuário não foi validado pelos administradores');
 
     const token =  jwt.sign({ role: user.role, isValid: user.isValid }, process.env.JWTKEY as string, {expiresIn: '1d'});
 
     delete user.password;
     delete user.isValid;
-    return res.status(200).send({user, token})
+    return { user, token };
   }
 
 }

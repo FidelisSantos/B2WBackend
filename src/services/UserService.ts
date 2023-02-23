@@ -1,9 +1,7 @@
 import  IUserService  from '../interfaces/services/IUserService';
 import  IUserRepository  from '../interfaces/repository/IUserRepository';
-import UserRepository from '../repository/UserRepository';
 import { Request, Response } from 'express';
 import  IMapping  from '../interfaces/mapping/IMapping';
-import Mapping from '../Mapping/Mapping';
 import  UserRoleEnum  from '../enum/UserRoleEnum';
 
 
@@ -153,4 +151,4 @@ class UserService implements IUserService{
   }
 }
 
-export default new UserService(UserRepository, Mapping);
+export default UserService;

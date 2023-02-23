@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import  IUserService  from '../interfaces/services/IUserService';
 import  UserService  from "../services/UserService";
 import  UserRoleEnum from "../enum/UserRoleEnum";
+import UserRepository from "../repository/UserRepository";
+import Mapping from "../Mapping/Mapping";
 
 class UserController {
 
@@ -47,4 +49,4 @@ class UserController {
 
 }
 
-export default new UserController(UserService)
+export default new UserController(new UserService(UserRepository, Mapping))
