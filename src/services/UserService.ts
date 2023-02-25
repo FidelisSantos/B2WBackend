@@ -3,6 +3,9 @@ import  IUserRepository  from '../interfaces/repository/IUserRepository';
 import { Request, Response } from 'express';
 import  IMapping  from '../interfaces/mapping/IMapping';
 import  UserRoleEnum  from '../enum/UserRoleEnum';
+import { BadRequestError } from '../error/BadRequestError';
+import { ConflictError } from '../error/ConflictError';
+import User from '../models/User';
 
 
 class UserService implements IUserService{
@@ -12,85 +15,54 @@ class UserService implements IUserService{
      this.mapping = mapping;
   }
 
-  async update(req: Request, res: Response) {
+  async update(req: Request) {
     const erroValidate = this.validateBodyUpdate(req);
     if(erroValidate)
-        return res.status(400).send(erroValidate);
+        throw new BadRequestError(erroValidate);
 
-    try{
-      const user  = await this.findOne(req.params.id);
-      if(!user)
-        return res.sendStatus(404);
+    const user  = await this.findOne(req.params.id);
+    if(!user)
+      throw new BadRequestError("Usuário não encontrado");
 
-      if(user.email !== req.body.email && await this.userRepository.exists(req.body.email))
-          return res.status(409).send(`Já existe usuário com email ${req.body.email}`);
+    if(user.email !== req.body.email && await this.userRepository.exists(req.body.email))
+      throw new ConflictError(`Já existe usuário com email ${req.body.email}`);
 
-      user.email = req.body.email;
-      user.name = req.body.name;
+    user.email = req.body.email;
+    user.name = req.body.name;
 
-      await this.userRepository.update(req.params.id, user);
-      return res.sendStatus(200)
-    } catch {
-      return res.sendStatus(500);
-    }
+    await this.userRepository.update(req.params.id, user);
   }
 
-  async resetPassword(req: Request, res: Response) {
-    try {
-      await this.userRepository.changePassword(req.params.id, 'reset123');
-      return res.sendStatus(200);
-    } catch {
-      return res.sendStatus(500);
-    }
+  async resetPassword(req: Request) {
+    await this.userRepository.changePassword(req.params.id, 'reset123');
   }
 
-  async newPassword(req: Request, res: Response) {
-    try {
-      if(!await this.userRepository.exists(req.params.id))
-        return res.sendStatus(404);
+  async newPassword(req: Request) {
+    if(!await this.userRepository.exists(req.params.id))
+      throw new BadRequestError("Usuário não encontrado");
 
-      await this.userRepository.changePassword(req.params.id, req.body.password);
-      return res.sendStatus(200);
-    } catch {
-      return res.sendStatus(500);
-    }
+    await this.userRepository.changePassword(req.params.id, req.body.password);
   }
 
-  async validUser(req: Request, res: Response) {
-    try{
-      if(!await this.userRepository.exists(req.params.id))
-        return res.sendStatus(404);
+  async validUser(req: Request) {
+    if(!await this.userRepository.exists(req.params.id))
+      throw new BadRequestError("Usuário não encontrado");
 
-      await this.userRepository.validUser(req.params.id);
-      return res.sendStatus(200);
-    } catch {
-      return res.sendStatus(500);
-    }
+    await this.userRepository.validUser(req.params.id);
   }
 
-  async updateRole(req: Request, res: Response, role: UserRoleEnum) {
-    try{
-      if(!await this.userRepository.exists(req.params.id))
-        return res.sendStatus(404);
+  async updateRole(req: Request, role: UserRoleEnum) {
+    if(!await this.userRepository.exists(req.params.id))
+      throw new BadRequestError("Usuário não encontrado");
 
-      await this.userRepository.updateRole(req.params.id, role);
-      return res.sendStatus(200);
-
-    } catch {
-      return res.sendStatus(500);
-    }
+    await this.userRepository.updateRole(req.params.id, role);
   }
 
-  async delete(req: Request, res: Response) {
-    try{
-      if(!await this.userRepository.exists(req.params.id))
-        return res.sendStatus(404);
+  async delete(req: Request) {
+    if(!await this.userRepository.exists(req.params.id))
+      throw new BadRequestError("Usuário não encontrado");
 
-      await this.userRepository.delete(req.params.id);
-      return res.sendStatus(200);
-    } catch {
-      return res.sendStatus(500);
-    }
+    await this.userRepository.delete(req.params.id);
   }
 
   private async findOne(id: string) {
@@ -99,36 +71,25 @@ class UserService implements IUserService{
     else return this.mapping.convertToUser(user);
   }
 
-  async findAll(res: Response) {
-    try{
-      const response =  await this.userRepository.findAll();
-      response.forEach((user: any) => {
-        delete user.password;
-      });
-      return res.status(200).send(response);
-    } catch {
-      return res.status(500);
-    }
+  async findAll() {
+    const response =  await this.userRepository.findAll() as User[];
+    const users = this.mapping.convertToListUserResponse(response);
+    return users;
   }
 
-  async create(req: Request, res: Response) {
+  async create(req: Request) {
     const erroValidate = this.validateBodyCreate(req);
     if(erroValidate)
-      return res.status(400).send({message: erroValidate});
+    throw new BadRequestError(erroValidate);
 
-      try {
-        if(await this.userRepository.existsEmail(req.body.email))
-          return res.status(409).send({message: 'Já existe usuário com esse email'});
+    if(await this.userRepository.existsEmail(req.body.email))
+      throw new ConflictError(`Já existe usuário com email ${req.body.email}`);
 
-        const newUser = this.mapping.newUser(req.body);
-        await this.userRepository.create(newUser);
-        return res.sendStatus(201);
-      } catch {
-        return res.sendStatus(500);
-      }
+    const newUser = this.mapping.newUser(req.body);
+    await this.userRepository.create(newUser);
   }
 
-  validateBodyCreate(req: Request) {
+  private validateBodyCreate(req: Request) {
     const regexName = new RegExp(/^[a-zA-Z ]{2,30}$/);
     const regexEmail = new RegExp(/^[a-z0-9.]+@[a-z0-9]+\.[a-z]/i);
     if(!req.body) return 'Dados Vazios';
@@ -140,7 +101,7 @@ class UserService implements IUserService{
     if(req.body.password.length < 6) return 'Senha tem que ter no minimo 6 digitos';
   }
 
-  validateBodyUpdate(req: Request) {
+  private validateBodyUpdate(req: Request) {
     const regexName = new RegExp(/^[a-zA-Z ]{2,30}$/);
     const regexEmail = new RegExp(/^[a-z0-9.]+@[a-z0-9]+\.[a-z]/i);
     if(!req.body) return 'Dados Vazios';

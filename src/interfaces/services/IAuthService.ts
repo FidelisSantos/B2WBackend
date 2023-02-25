@@ -1,7 +1,7 @@
-import { Response } from "express";
+import { AuthResponse } from "../../types/AuthResponse";
 
 interface IAuthService {
-  authenticate(res:Response,email: string, password: string): Promise<any>
+  authenticate(email: string, password: string): Promise<AuthResponse>
 }
 
 export default IAuthService;

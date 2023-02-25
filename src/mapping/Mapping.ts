@@ -2,6 +2,8 @@ import  UserRoleEnum  from "../enum/UserRoleEnum";
 import User from "../models/User";
 import IMapping  from '../interfaces/mapping/IMapping';
 import Script from "../models/Script";
+import { UserAuthResponse } from "../types/UserAuthResponse";
+import { UserResponse } from "../types/UserResponse";
 class Mapping implements IMapping {
 
   convertToUser(user: any) {
@@ -36,6 +38,32 @@ class Mapping implements IMapping {
     };
 
     return user;
+  }
+
+  convertToUserAuthResponse(user: User) {
+    const userResponse : UserAuthResponse = {
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    }
+
+    return userResponse;
+  }
+
+  convertToListUserResponse(users: User[]) {
+    const listUserResponse: UserResponse[] = [];
+    users.forEach(user => {
+      const userResponse: UserResponse = {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        isValid: user.isValid
+      }
+
+      listUserResponse.push(userResponse);
+    });
+
+    return listUserResponse;
   }
 }
 

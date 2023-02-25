@@ -1,10 +1,11 @@
-import { Request, Response } from "express";
+import { Request } from "express";
+import Script from '../../models/Script';
 
 interface IScriptService {
-  create(req: Request, res: Response, path: string):Promise<Response>;
-  findAll(res: Response, path: string):Promise<Response>;
-  delete (req: Request, res: Response, path: string):Promise<Response>;
-  update(req: Request, res: Response, path: string):Promise<Response>;
+  create(req: Request, path: string): Promise<void>;
+  findAll(path: string): Promise<Script[]>;
+  delete (req: Request, path: string): Promise<void>;
+  update(req: Request, path: string): Promise<void>;
 }
 
 export default IScriptService;

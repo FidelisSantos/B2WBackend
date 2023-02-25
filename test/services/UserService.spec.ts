@@ -1,5 +1,5 @@
 import UserService from "../../src/services/UserService";
-import Mapping from "../../src/Mapping/Mapping";
+import Mapping from "../../src/mapping/Mapping";
 import IUserRepository from "../../src/interfaces/repository/IUserRepository";
 import { getMockReq, getMockRes } from '@jest-mock/express';
 import { verify } from "crypto";

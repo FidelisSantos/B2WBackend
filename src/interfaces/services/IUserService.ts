@@ -1,15 +1,16 @@
-import { Request, Response } from "express";
+import { Request } from "express";
 import  UserRoleEnum  from "../../enum/UserRoleEnum";
+import { UserResponse } from "../../types/UserResponse";
 
 interface IUserService  {
-  create(req: Request, res: Response):Promise<Response>;
-  findAll(res: Response):Promise<Response>;
-  delete (req: Request, res: Response):Promise<Response>;
-  updateRole(req:Request, res: Response, role: UserRoleEnum):Promise<Response>;
-  validUser(req: Request, res: Response):Promise<Response>;
-  resetPassword(req: Request, res: Response):Promise<Response>;
-  newPassword(req: Request, res: Response):Promise<Response>;
-  update(req: Request, res: Response):Promise<Response>;
+  create(req: Request): Promise<void>;
+  findAll(): Promise<UserResponse[]>;
+  delete (req: Request): Promise<void>;
+  updateRole(req:Request, role: UserRoleEnum): Promise<void>;
+  validUser(req: Request): Promise<void>;
+  resetPassword(req: Request): Promise<void>;
+  newPassword(req: Request): Promise<void>;
+  update(req: Request): Promise<void>;
 }
 
 export default IUserService

@@ -1,22 +1,24 @@
 import  IAuthService  from "../interfaces/services/IAuthService";
 import { BadRequestError } from '../error/BadRequestError';
 import jwt from 'jsonwebtoken';
-import { Request, Response } from "express";
 import  IAuthRepository  from '../interfaces/repository/IAuthRepository';
-import AuthRepository from '../repository/AuthRepository';
 import * as env from 'dotenv'
+import User from "../models/User";
+import IMapping from '../interfaces/mapping/IMapping';
+import { AuthResponse } from "../types/AuthResponse";
 
 env.config()
 class AuthService implements IAuthService {
 
-  constructor(private authReposuory: IAuthRepository) {
-    this.authReposuory = authReposuory;
+  constructor(private readonly authRepository: IAuthRepository, private readonly mapper: IMapping) {
+    this.authRepository = authRepository;
+    this.mapper = mapper;
   }
 
-  async authenticate(res: Response, email: string, password: string) {
+  async authenticate(email: string, password: string) {
     if(!email || !password)
-      return res.status(401).send({ message: 'Login ou senha incorretos'})
-     const user = await this.authReposuory.findByEmail(email);
+      throw new BadRequestError("Login ou senha incorretos");
+     const user = await this.authRepository.findByEmail(email) as User | undefined;
 
      if(!user || user.password != password)
       throw new BadRequestError("Login ou senha incorretos")
@@ -26,11 +28,11 @@ class AuthService implements IAuthService {
 
     const token =  jwt.sign({ role: user.role, isValid: user.isValid }, process.env.JWTKEY as string, {expiresIn: '1d'});
 
-    delete user.password;
-    delete user.isValid;
-    return { user, token };
+    const userResponse = this.mapper.convertToUserAuthResponse(user);
+
+    return { user: userResponse, token } as AuthResponse;
   }
 
 }
 
-export default new AuthService(AuthRepository)
+export default AuthService;

@@ -3,9 +3,12 @@ import  IScriptService  from "../interfaces/services/IScriptService";
 import  IScriptRepository  from "../interfaces/repository/IScriptRepository";
 import  IMapping  from '../interfaces/mapping/IMapping';
 import ScriptRepository from "../repository/ScriptRepository";
-import Mapping from "../Mapping/Mapping";
+import Mapping from "../mapping/Mapping";
 import Storage from "../firebase/storage/storage";
 import IStorage from "../interfaces/storage/IStorage";
+import { BadRequestError } from '../error/BadRequestError';
+import { ConflictError } from '../error/ConflictError';
+import Script from "../models/Script";
 
 class ScriptService implements IScriptService {
 
@@ -17,14 +20,12 @@ class ScriptService implements IScriptService {
     this.storage = storage;
   }
 
-  async create(req: Request, res: Response, path: string) {
-    try{
+  async create(req: Request, path: string) {
       const erroValidate = this.validateBody(req);
-      if(erroValidate)
-        return res.status(400).send(erroValidate);
+      if(erroValidate) throw new BadRequestError(erroValidate);
 
       if(await this.scriptRepository.existsQuestion(req.body.question, path))
-        return res.status(409).send('Já existe essa pergunta');
+        throw new ConflictError('Já existe essa pergunta');
 
       if(req.file) {
         req.body.imgAnswer = await this.storage.upload(path, req.file)
@@ -34,47 +35,31 @@ class ScriptService implements IScriptService {
 
       const newScript = this.mapping.convertToScript(req.body);
       await this.scriptRepository.create(newScript, path);
-      return res.sendStatus(200);
-    }catch (e:any) {
-      return res.status(500).send(e.message);
-    }
   }
 
-  async findAll(res: Response, path: string) {
-    try {
-      const scripts = await this.scriptRepository.findAll(path);
-      return res.status(200).send(scripts);
-    } catch {
-      return res.sendStatus(500);
-    }
+  async findAll(path: string) {
+    return await this.scriptRepository.findAll(path) as Script[];
   }
 
-  async delete(req: Request, res: Response, path: string) {
-   try {
-      const script = await this.findOne(req.params.id, path);
-      if(!script)
-        return res.sendStatus(404);
+  async delete(req: Request, path: string) {
+    const script = await this.findOne(req.params.id, path);
+    if(!script)
+      throw new BadRequestError("Script não encontrado");
 
-        await this.storage.delete(script.imgAnswer)
-      await this.scriptRepository.delete(req.params.id, path);
-      return res.sendStatus(200);
-   } catch {
-      return res.sendStatus(500);
-   }
+    await this.storage.delete(script.imgAnswer)
+    await this.scriptRepository.delete(req.params.id, path);
   }
 
-  async update(req: Request, res: Response, path: string) {
-    try{
+  async update(req: Request, path: string) {
+
       const erroValidate = this.validateBody(req);
-      if(erroValidate)
-      return res.status(400).send(erroValidate);
+      if(erroValidate) throw new BadRequestError(erroValidate);
 
       const script = await this.findOne(req.params.id, path);
-      if(!script)
-        return res.sendStatus(404);
+      if(!script) throw new BadRequestError("Script não encontrado");
 
       if(script.question != req.body.question && await this.scriptRepository.existsQuestion(req.body.question, path))
-        return res.status(409).send('Já existe essa pergunta');
+        throw new ConflictError('Já existe essa pergunta');
 
       if(req.file){
         req.body.imgAnswer = await this.storage.upload(path, req.file);
@@ -85,17 +70,11 @@ class ScriptService implements IScriptService {
       script.answer = req.body.answer;
       script.imgAnswer = req.body.imgAnswer;
       await this.scriptRepository.update(script, req.params.id, path);
-      return res.sendStatus(200);
-    }catch (e: any){
-      return res.sendStatus(500);
-    }
+
   }
 
   private async findOne(id: string, path: string) {
-    const script = await this.scriptRepository.findOne(id, path);
-    if(!script)
-      return;
-    return this.mapping.convertToScript(script);
+    return await this.scriptRepository.findOne(id, path) as Script | undefined;
   }
 
   private validateBody(req: Request) {
@@ -110,4 +89,4 @@ class ScriptService implements IScriptService {
   }
 }
 
-export default new ScriptService(ScriptRepository, Mapping, Storage)
+export default ScriptService;

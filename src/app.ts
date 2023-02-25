@@ -6,7 +6,6 @@ import AuthRoute from './routes/AuthRoute';
 import UserRoute from './routes/UserRoute';
 import ScriptRoute from './routes/ScriptRoute';
 
-
 env.config()
 
 class App {
@@ -16,7 +15,7 @@ class App {
     this.app.use(bodyParser.urlencoded({ extended: true }));
     this.app.use(express.json());
 
-    this.app.use(cors())
+    this.app.use(cors());
 
     this.app.use("/auth", AuthRoute.router);
     this.app.use("/users", UserRoute.router);
