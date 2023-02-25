@@ -177,7 +177,7 @@ describe("Delete User", () => {
   test("Delete a dont exists", async () => {
     const userService = new UserService(userRepository, Mapping);
     userRepository.exists.mockImplementation(async() => false)
-    const req = getMockReq()
+    const req = getMockReq();
     req.params.id = "ahuahuha";
     try {
       await userService.delete(req)
@@ -185,6 +185,5 @@ describe("Delete User", () => {
       expect(err instanceof BadRequestError &&
               err.message == "Usuário não encontrado").toBe(true);
     }
-
   });
 });
