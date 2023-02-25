@@ -1,6 +1,6 @@
 import  IUserService  from '../interfaces/services/IUserService';
 import  IUserRepository  from '../interfaces/repository/IUserRepository';
-import { Request, Response } from 'express';
+import { Request } from 'express';
 import  IMapping  from '../interfaces/mapping/IMapping';
 import  UserRoleEnum  from '../enum/UserRoleEnum';
 import { BadRequestError } from '../error/BadRequestError';
@@ -34,6 +34,8 @@ class UserService implements IUserService{
   }
 
   async resetPassword(req: Request) {
+    if(!await this.userRepository.exists(req.params.id))
+      throw new BadRequestError("Usuário não encontrado");
     await this.userRepository.changePassword(req.params.id, 'reset123');
   }
 
@@ -73,6 +75,7 @@ class UserService implements IUserService{
 
   async findAll() {
     const response =  await this.userRepository.findAll() as User[];
+    if(!response) return null;
     const users = this.mapping.convertToListUserResponse(response);
     return users;
   }

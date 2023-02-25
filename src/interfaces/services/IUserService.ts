@@ -4,7 +4,7 @@ import { UserResponse } from "../../types/UserResponse";
 
 interface IUserService  {
   create(req: Request): Promise<void>;
-  findAll(): Promise<UserResponse[]>;
+  findAll(): Promise<UserResponse[] | null>;
   delete (req: Request): Promise<void>;
   updateRole(req:Request, role: UserRoleEnum): Promise<void>;
   validUser(req: Request): Promise<void>;
