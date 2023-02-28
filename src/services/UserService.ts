@@ -16,7 +16,7 @@ class UserService implements IUserService{
   }
 
   async update(req: Request) {
-    const erroValidate = this.validateBodyUpdate(req);
+    const erroValidate = this.validateBody(req, "update");
     if(erroValidate)
         throw new BadRequestError(erroValidate);
 
@@ -24,7 +24,7 @@ class UserService implements IUserService{
     if(!user)
       throw new BadRequestError("Usuário não encontrado");
 
-    if(user.email !== req.body.email && await this.userRepository.exists(req.body.email))
+    if(user.email !== req.body.email && await this.userRepository.existsEmail(req.body.email))
       throw new ConflictError(`Já existe usuário com email ${req.body.email}`);
 
     user.email = req.body.email;
@@ -36,10 +36,15 @@ class UserService implements IUserService{
   async resetPassword(req: Request) {
     if(!await this.userRepository.exists(req.params.id))
       throw new BadRequestError("Usuário não encontrado");
+
     await this.userRepository.changePassword(req.params.id, 'reset123');
   }
 
   async newPassword(req: Request) {
+    const erroValidate = this.validateBody(req, "newPassword");
+    if(erroValidate)
+      throw new BadRequestError(erroValidate);
+
     if(!await this.userRepository.exists(req.params.id))
       throw new BadRequestError("Usuário não encontrado");
 
@@ -68,7 +73,7 @@ class UserService implements IUserService{
   }
 
   private async findOne(id: string) {
-    const user = await this.userRepository.findOne(id);
+    const user = await this.userRepository.findOne(id) as User;
     if(!user) return ;
     else return this.mapping.convertToUser(user);
   }
@@ -76,12 +81,12 @@ class UserService implements IUserService{
   async findAll() {
     const response =  await this.userRepository.findAll() as User[];
     if(!response) return null;
-    const users = this.mapping.convertToListUserResponse(response);
-    return users;
+
+    return this.mapping.convertToListUserResponse(response);
   }
 
   async create(req: Request) {
-    const erroValidate = this.validateBodyCreate(req);
+    const erroValidate = this.validateBody(req, "create");
     if(erroValidate)
     throw new BadRequestError(erroValidate);
 
@@ -92,27 +97,22 @@ class UserService implements IUserService{
     await this.userRepository.create(newUser);
   }
 
-  private validateBodyCreate(req: Request) {
+  private validateBody(req: Request, action: string) {
     const regexName = new RegExp(/^[a-zA-Z ]{2,30}$/);
     const regexEmail = new RegExp(/^[a-z0-9.]+@[a-z0-9]+\.[a-z]/i);
     if(!req.body) return 'Dados Vazios';
-    if(!req.body.name) return 'Campo nome obrigatório';
-    if(!regexName.test(req.body.name)) return 'Nome inválido';
-    if(!req.body.email) return 'Campo email obrigatório';
-    if(!regexEmail.test(req.body.email)) return 'Email inválido';
-    if(!req.body.password) return 'Campo senha obrigatório';
-    if(req.body.password.length < 6) return 'Senha tem que ter no minimo 6 digitos';
+    if(action != 'newPassword') {
+      if(!req.body.name) return 'Campo nome obrigatório';
+      if(!regexName.test(req.body.name)) return 'Nome inválido';
+      if(!req.body.email) return 'Campo email obrigatório';
+      if(!regexEmail.test(req.body.email)) return 'Email inválido';
+    }
+    if(action != 'update') {
+      if(!req.body.password) return 'Campo senha obrigatório';
+      if(req.body.password.length < 6) return 'Senha tem que ter no minimo 6 digitos';
+    }
   }
 
-  private validateBodyUpdate(req: Request) {
-    const regexName = new RegExp(/^[a-zA-Z ]{2,30}$/);
-    const regexEmail = new RegExp(/^[a-z0-9.]+@[a-z0-9]+\.[a-z]/i);
-    if(!req.body) return 'Dados Vazios';
-    if(!req.body.name) return 'Campo nome obrigatório';
-    if(!regexName.test(req.body.name)) return 'Nome inválido';
-    if(!req.body.email) return 'Campo email obrigatório';
-    if(!regexEmail.test(req.body.email)) return 'Email inválido';
-  }
 }
 
 export default UserService;
